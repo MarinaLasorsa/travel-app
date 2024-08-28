@@ -11,10 +11,10 @@ export const store = reactive({
         const { data, error: fetchError } = await supabase.from('trips').select()
         if (fetchError) {
             console.error('Error fetching trips:', fetchError)
-            error.value = 'Error fetching trips'
+            this.error.value = 'Error fetching trips'
         } else {
             console.log('Fetched trips:', data)
-            trips.value = data
+            this.trips.value = data
         }
     },
 
@@ -25,7 +25,7 @@ export const store = reactive({
             console.error('Error inserting trip:', error)
         } else {
             console.log('Inserted trip:', data)
-            getTrips() // Refresh the trips list
+            await this.getTrips() // Refresh the trips list
         }
     },
 
@@ -34,9 +34,10 @@ export const store = reactive({
         const { data, error } = await supabase.from('trips').update(updates).eq('id', id)
         if (error) {
             console.error('Error updating trip:', error)
+            this.error.value = 'Error updating trip'
         } else {
             console.log('Updated trip:', data)
-            getTrips() // Refresh the trips list
+            await this.getTrips() // Refresh the trips list
         }
     },
 
@@ -47,7 +48,7 @@ export const store = reactive({
             console.error('Error deleting trip:', error)
         } else {
             console.log('Deleted trip:', data)
-            getTrips() // Refresh the trips list
+            await this.getTrips() // Refresh the trips list
         }
     }
 })

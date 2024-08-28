@@ -18,6 +18,7 @@ export default {
   computed: {
   },
   mounted() {
+    this.store.getTrips()
   }
 }
 </script>
