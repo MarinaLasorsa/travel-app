@@ -18,6 +18,45 @@ export const store = reactive({
         }
     },
 
+    //fetch trip by slug
+    async getTripBySlug(slug) {
+        const { data, error: fetchError } = await supabase.from('trips').select().eq('slug', slug).single()
+        if (fetchError) {
+            console.error('Error fetching trip by slug:', fetchError)
+            this.error.value = 'Error fetching trip by slug'
+            return null
+        } else {
+            console.log('Fetched trip by slug:', data)
+            return data
+        }
+    },
+
+    //fetch days by trip id
+    async getDays(trip_id) {
+        const { data, error: fetchError } = await supabase.from('days').select().eq('trip_id', trip_id)
+        if (fetchError) {
+            console.error('Error fetching days by trip_id:', fetchError)
+            this.error.value = 'Error fetching days'
+            return []
+        } else {
+            console.log('Fetched days by trip_id:', data)
+            return data
+        }
+    },
+
+    //fetch stops by day id
+    async getStops(day_id) {
+        const { data, error: fetchError } = await supabase.from('stops').select().eq('day_id', day_id)
+        if (fetchError) {
+            console.error('Error fetching stops by day_id:', fetchError)
+            this.error.value = 'Error fetching stops'
+            return []
+        } else {
+            console.log('Fetched stops by day_id:', data)
+            return data
+        }
+    },
+
     // Insert a new trip
     async insertTrip(trip) {
         const { data, error } = await supabase.from('trips').insert([trip])

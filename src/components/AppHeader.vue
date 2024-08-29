@@ -1,6 +1,8 @@
 <template>
     <div class="page-header py-3">
-        <div class="logo">JourneyJournal</div>
+        <RouterLink :to="{ name: 'home' }">
+            <div class="logo">JourneyJournal</div>
+        </RouterLink>
     </div>
 </template>
 

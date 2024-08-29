@@ -1,11 +1,13 @@
 <template>
     <div class="col-12 col-md-6 col-lg-4">
         <div class="card">
-            <img src="..." class="card-img-top" alt="...">
-            <div class="card-body">
-                <h5 class="card-title">{{ trip.title }}</h5>
-                <p class="card-text">{{ trip.departure_date }}</p>
-            </div>
+            <RouterLink :to="{ name: 'trips.show', params: { slug: trip.slug } }">
+                <img src="..." class="card-img-top" alt="...">
+                <div class="card-body">
+                    <h5 class="card-title">{{ trip.title }}</h5>
+                    <p class="card-text">{{ trip.departure_date }}</p>
+                </div>
+            </RouterLink>
         </div>
     </div>
 </template>
