@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div v-if="trip">
         <div class="d-flex align-items-center">
             <h1 class="pt-4 pb-3 me-4">{{ trip.title }}</h1>
             <a class="btn btn-primary" data-bs-toggle="offcanvas" href="#offcanvasUpdate" role="button"
@@ -66,7 +66,14 @@
                                     </div>
                                 </div>
 
+                                <div class="mb-4 row">
+                                    <label for="image" class="col-md-4 col-form-label text-md-right">Foto di
+                                        copertina</label>
 
+                                    <div class="col-md-6">
+                                        <input id="image" type="file" class="form-control" @change="onFileChange">
+                                    </div>
+                                </div>
 
                                 <div class="mb-4 row mb-0">
                                     <div class="col-md-6 offset-md-4">
@@ -81,12 +88,19 @@
                 </div>
             </div>
         </div>
-
+    </div>
+    <!-- Loading/Error states -->
+    <div v-else-if="error">
+        <p>{{ error }}</p>
+    </div>
+    <div v-else>
+        <p>Loading trip details...</p>
     </div>
 </template>
 
 <script>
 import { store } from '../store.js';
+import { supabase } from '../lib/supabaseClient.js'
 
 export default {
     props: {
@@ -106,18 +120,62 @@ export default {
             error: null,
             title: '',
             departure_date: '',
+            selectedFile: null,
         }
     },
     methods: {
+        onFileChange(event) {
+            const file = event.target.files[0]; // Access the first file in the input
+            if (file) {
+                console.log('File selected:', file.name); // Debugging log
+                this.selectedFile = file; // Store the chosen file in selectedFile
+            } else {
+                console.log('No file selected'); // Debugging log
+            }
+        },
         async onUpdate() {
             try {
-                //define updates as the new values
+                console.log('Updating trip...'); // Debugging log
+
+                // Define updates as the new values
                 const updates = {
                     title: this.title,
                     departure_date: this.departure_date,
                 };
-                //call the update trip function
+
+                // Define the existing image URL
+                let imageUrl = this.trip.image;
+
+                // If a new file exists, upload it and get the URL
+                if (this.selectedFile) {
+                    // Debugging log
+                    console.log('Deleting previous file...');
+                    // If there's an existing image, delete it first
+                    if (imageUrl) {
+                        const oldImagePath = imageUrl.split('/').pop(); // Extract the file name
+                        await this.deleteImage(`images/${oldImagePath}`);
+                    }
+
+                    console.log('Current timestamp:', Date.now());
+                    // Debugging log
+                    console.log('Generating unique name...');
+                    // Generate a unique file name using timestamp and original name
+                    const uniqueFileName = `${Date.now()}_${this.selectedFile.name}`;
+
+                    // Debugging log
+                    console.log('Uploading file...');
+                    //upload the new image
+                    imageUrl = await this.uploadImage(this.selectedFile, uniqueFileName);
+                }
+
+                updates.image = imageUrl;
+
+                console.log('Updating trip in the database...', updates); // Debugging log
+
+                // Call the update trip function
                 await store.updateTrip(this.trip.id, updates);
+
+                console.log('Trip updated!'); // Debugging log
 
                 this.$nextTick(() => {
                     const offcanvasElement = document.getElementById('offcanvasUpdate');
@@ -127,12 +185,46 @@ export default {
                     }
                 });
 
-                //refresh the page with the new data
-                window.location.reload();
-
+                // Refresh the page with the new data
+                // window.location.reload();
             } catch (error) {
                 console.error('Error updating trip:', error);
             }
+        },
+        async deleteImage(imagePath) {
+            const { error } = await supabase.storage
+                .from('trip-images')
+                .remove([imagePath]);
+
+            if (error) {
+                console.error('Error deleting image:', error);
+                this.error = 'Error deleting image';
+            } else {
+                console.log('Image deleted successfully');
+            }
+        },
+        async uploadImage(file, fileName) {
+            console.log('Starting file upload:', fileName); // Debugging log
+            const { data, error } = await supabase.storage
+                .from('trip-images')
+                .upload(`images/${fileName}`, file);
+
+            if (error) {
+                console.error('Error uploading image:', error);
+                this.error = 'Error uploading image';
+                return null;
+            }
+
+            console.log('File uploaded, retrieving public URL...'); // Debugging log
+
+            // Get the public URL of the uploaded file
+            const url = supabase.storage
+                .from('trip-images')
+                .getPublicUrl(data.path);
+
+            console.log('Public URL generated:', url.data.publicUrl); // Debugging log
+
+            return url.data.publicUrl;
         }
     },
     async created() {
