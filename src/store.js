@@ -57,6 +57,19 @@ export const store = reactive({
         }
     },
 
+    //fetch stop by slug
+    async getStopBySlug(slug) {
+        const { data, error: fetchError } = await supabase.from('stops').select().eq('slug', slug).single()
+        if (fetchError) {
+            console.error('Error fetching stop by slug:', fetchError)
+            this.error.value = 'Error fetching stop by slug'
+            return null
+        } else {
+            console.log('Fetched stop by slug:', data)
+            return data
+        }
+    },
+
     // Insert a new trip
     async insertTrip(trip) {
         const { data, error } = await supabase.from('trips').insert([trip])
