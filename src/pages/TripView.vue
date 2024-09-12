@@ -1,23 +1,22 @@
 <template>
     <div v-if="trip">
-        <div class="d-flex align-items-center">
-            <h1 class="pt-4 pb-3 me-4">{{ trip.title }}</h1>
+        <div class="d-flex align-items-baseline">
+            <h1 class="pt-4 me-4">{{ trip.title }}</h1>
             <a class="btn btn-primary" data-bs-toggle="offcanvas" href="#offcanvasUpdate" role="button"
                 aria-controls="offcanvasUpdate">
                 Modifica
             </a>
         </div>
 
-        <div class="accordion" id="accordionExample">
-            <div v-for="day in days" :key="day.id" class="accordion-item">
-                <h2 class="accordion-header" id="headingOne">
+        <div class="accordion my-3" id="accordionExample">
+            <div v-for="(day, index) in days" :key="day.id" class="accordion-item">
+                <h2 class="accordion-header" :id="'heading' + index">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                        GIORNO {{ day.id }}
+                        :data-bs-target="'#collapse' + index" aria-expanded="true" :aria-controls="'collapse' + index">
+                        {{ calculateDate(index) }} - GIORNO {{ day.id }}
                     </button>
                 </h2>
-                <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne"
-                    data-bs-parent="#accordionExample">
+                <div :id="'collapse' + index" class="accordion-collapse collapse" :aria-labelledby="'heading' + index">
                     <div class="accordion-body">
                         <ul class="list-group">
 
@@ -100,7 +99,6 @@
 
 <script>
 import { store } from '../store.js';
-import { supabase } from '../lib/supabaseClient.js'
 
 export default {
     props: {
@@ -124,6 +122,29 @@ export default {
         }
     },
     methods: {
+        calculateDate(index) {
+
+            // Ensure the departure_date is available and is in a valid format
+            if (!this.trip.departure_date) {
+                console.error('Error: departure_date is missing');
+                return 'Invalid date';
+            }
+
+            //define date of first day as departure_date
+            const departureDate = new Date(this.trip.departure_date);
+            // Check if the date is valid
+            if (isNaN(departureDate.getTime())) {
+                console.error('Error: Invalid departure_date format');
+                return 'Invalid date';
+            }
+
+            // Add `index` number of days to the departure date
+            const newDate = new Date(departureDate);
+            newDate.setDate(departureDate.getDate() + index);
+
+            // Format the date
+            return newDate.toLocaleDateString('en-GB'); // Format date to 'DD/MM/YYYY'
+        },
         onFileChange(event) {
             const file = event.target.files[0]; // Access the first file in the input
             if (file) {
@@ -153,7 +174,7 @@ export default {
                     // If there's an existing image, delete it first
                     if (imageUrl) {
                         const oldImagePath = imageUrl.split('/').pop(); // Extract the file name
-                        await this.deleteImage(`images/${oldImagePath}`);
+                        await store.deleteImage(`images/${oldImagePath}`);
                     }
 
                     console.log('Current timestamp:', Date.now());
@@ -165,7 +186,7 @@ export default {
                     // Debugging log
                     console.log('Uploading file...');
                     //upload the new image
-                    imageUrl = await this.uploadImage(this.selectedFile, uniqueFileName);
+                    imageUrl = await store.uploadImage(this.selectedFile, uniqueFileName);
                 }
 
                 updates.image = imageUrl;
@@ -191,41 +212,6 @@ export default {
                 console.error('Error updating trip:', error);
             }
         },
-        async deleteImage(imagePath) {
-            const { error } = await supabase.storage
-                .from('trip-images')
-                .remove([imagePath]);
-
-            if (error) {
-                console.error('Error deleting image:', error);
-                this.error = 'Error deleting image';
-            } else {
-                console.log('Image deleted successfully');
-            }
-        },
-        async uploadImage(file, fileName) {
-            console.log('Starting file upload:', fileName); // Debugging log
-            const { data, error } = await supabase.storage
-                .from('trip-images')
-                .upload(`images/${fileName}`, file);
-
-            if (error) {
-                console.error('Error uploading image:', error);
-                this.error = 'Error uploading image';
-                return null;
-            }
-
-            console.log('File uploaded, retrieving public URL...'); // Debugging log
-
-            // Get the public URL of the uploaded file
-            const url = supabase.storage
-                .from('trip-images')
-                .getPublicUrl(data.path);
-
-            console.log('Public URL generated:', url.data.publicUrl); // Debugging log
-
-            return url.data.publicUrl;
-        }
     },
     async created() {
         try {

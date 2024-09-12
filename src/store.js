@@ -102,5 +102,44 @@ export const store = reactive({
             console.log('Deleted trip:', data)
             await this.getTrips() // Refresh the trips list
         }
+    },
+
+    //delete an image from storage bucket trip-images
+    async deleteImage(imagePath) {
+        const { error } = await supabase.storage
+            .from('trip-images')
+            .remove([imagePath]);
+
+        if (error) {
+            console.error('Error deleting image:', error);
+            this.error = 'Error deleting image';
+        } else {
+            console.log('Image deleted successfully');
+        }
+    },
+
+    //upload an image in storage bucket trip-images
+    async uploadImage(file, fileName) {
+        console.log('Starting file upload:', fileName); // Debugging log
+        const { data, error } = await supabase.storage
+            .from('trip-images')
+            .upload(`images/${fileName}`, file);
+
+        if (error) {
+            console.error('Error uploading image:', error);
+            this.error = 'Error uploading image';
+            return null;
+        }
+
+        console.log('File uploaded, retrieving public URL...'); // Debugging log
+
+        // Get the public URL of the uploaded file
+        const url = supabase.storage
+            .from('trip-images')
+            .getPublicUrl(data.path);
+
+        console.log('Public URL generated:', url.data.publicUrl); // Debugging log
+
+        return url.data.publicUrl;
     }
 })

@@ -2,6 +2,7 @@
     <h1 class="pt-4 pb-2">I MIEI VIAGGI</h1>
     <div class="row">
         <TripCard v-for="trip in store.trips.value" :key="trip.id" :trip="trip" />
+
     </div>
 </template>
 
